@@ -18,6 +18,12 @@ class Api():
         self.access_token = access_token
         self.apibase = 'https://api.kuvien.io'
 
+    def get_auth_header(self):
+        return {
+            'Authorization': self.id_token,
+            'AccessToken': self.access_token
+        }
+
     def upload(self, f):
         if not self.key:
             raise MissingAuthError
@@ -56,14 +62,23 @@ class Api():
 
         return resp.json()['domains']
 
-    def add_subdomain(self, subdomain, domain):
+    def list_subdomains(self):
         if not self.id_token or not self.access_token:
             raise MissingAuthError
 
-        headers = {
-            'Authorization': self.id_token,
-            'AccessToken': self.access_token
-        }
+        resp = requests.get(
+            '{}/user/domains'.format(self.apibase),
+            headers=self.get_auth_header()
+        )
+
+        if not resp.status_code == 200:
+            raise HttpError
+
+        return resp.json()['domains']
+
+    def add_subdomain(self, subdomain, domain):
+        if not self.id_token or not self.access_token:
+            raise MissingAuthError
 
         payload = {
             'domain': domain,
@@ -73,7 +88,26 @@ class Api():
         resp = requests.post(
             '{}/domain/add'.format(self.apibase),
             json=payload,
-            headers=headers
+            headers=self.get_auth_header()
+        )
+
+        if not resp.status_code == 200:
+            raise HttpError
+
+        return resp.json()
+
+    def remove_subdomain(self, domainkey):
+        if not self.id_token or not self.access_token:
+            raise MissingAuthError
+
+        payload = {
+            'key': domainkey
+        }
+
+        resp = requests.post(
+            '{}/user/domain/delete'.format(self.apibase),
+            json=payload,
+            headers=self.get_auth_header()
         )
 
         if not resp.status_code == 200:
