@@ -56,7 +56,7 @@ class Api():
         )
 
         if not resp.status_code == 200:
-            raise HttpError(resp['status'], resp.status_code)
+            raise HttpError(resp.json()['status'], resp.status_code)
 
         return resp.json()['file']['url']
 
@@ -64,7 +64,7 @@ class Api():
         resp = requests.get('{}/domains'.format(self.apibase))
 
         if not resp.status_code == 200:
-            raise HttpError(resp['status'], resp.status_code)
+            raise HttpError(resp.json()['status'], resp.status_code)
 
         return resp.json()['domains']
 
@@ -78,7 +78,7 @@ class Api():
         )
 
         if not resp.status_code == 200:
-            raise HttpError(resp['status'], resp.status_code)
+            raise HttpError(resp.json()['status'], resp.status_code)
 
         return resp.json()['domains']
 
@@ -98,7 +98,7 @@ class Api():
         )
 
         if not resp.status_code == 200:
-            raise HttpError(resp['status'], resp.status_code)
+            raise HttpError(resp.json()['status'], resp.status_code)
 
         return resp.json()
 
@@ -117,7 +117,7 @@ class Api():
         )
 
         if not resp.status_code == 200:
-            raise HttpError(resp['status'], resp.status_code)
+            raise HttpError(resp.json()['status'], resp.status_code)
 
         return resp.json()
 
@@ -136,7 +136,7 @@ class Api():
         )
 
         if not resp.status_code == 200:
-            raise HttpError(resp['status'], resp.status_code)
+            raise HttpError(resp.json()['status'], resp.status_code)
 
         return resp.json()
 
@@ -155,7 +155,7 @@ class Api():
         )
 
         if not resp.status_code == 200:
-            raise HttpError(resp['status'], resp.status_code)
+            raise HttpError(resp.json()['status'], resp.status_code)
 
         return resp.json()['images']
 
@@ -174,7 +174,7 @@ class Api():
         )
 
         if not resp.status_code == 200:
-            raise HttpError(resp['status'], resp.status_code)
+            raise HttpError(resp.json()['status'], resp.status_code)
 
         return resp.json()
 
