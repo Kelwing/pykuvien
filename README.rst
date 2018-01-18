@@ -4,6 +4,7 @@ pykuvien
 The official API interface for `kuvien.io <https://kuvien.io>`_.
 
 Example:
+
 .. code-block:: python
 
   from pykuvien import Api
