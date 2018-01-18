@@ -8,7 +8,10 @@ class MissingAuthError(Exception):
 
 
 class HttpError(Exception):
-    pass
+    def __init__(self, message, status_code):
+        super(HttpError, self).__init__(message)
+
+        self.status_code = status_code
 
 
 class Api():
@@ -52,13 +55,16 @@ class Api():
             headers=headers
         )
 
+        if not resp.status_code == 200:
+            raise HttpError(resp['status'], resp.status_code)
+
         return resp.json()['file']['url']
 
     def domains(self):
         resp = requests.get('{}/domains'.format(self.apibase))
 
         if not resp.status_code == 200:
-            raise HttpError
+            raise HttpError(resp['status'], resp.status_code)
 
         return resp.json()['domains']
 
@@ -72,7 +78,7 @@ class Api():
         )
 
         if not resp.status_code == 200:
-            raise HttpError
+            raise HttpError(resp['status'], resp.status_code)
 
         return resp.json()['domains']
 
@@ -92,7 +98,7 @@ class Api():
         )
 
         if not resp.status_code == 200:
-            raise HttpError
+            raise HttpError(resp['status'], resp.status_code)
 
         return resp.json()
 
@@ -111,7 +117,64 @@ class Api():
         )
 
         if not resp.status_code == 200:
-            raise HttpError
+            raise HttpError(resp['status'], resp.status_code)
+
+        return resp.json()
+
+    def regenerate_domainkey(self, domainkey):
+        if not self.id_token or not self.access_token:
+            raise MissingAuthError
+
+        payload = {
+            'key': domainkey
+        }
+
+        resp = requests.post(
+            '{}/user/domain/regenerate'.format(self.apibase),
+            json=payload,
+            headers=self.get_auth_header()
+        )
+
+        if not resp.status_code == 200:
+            raise HttpError(resp['status'], resp.status_code)
+
+        return resp.json()
+
+    def list_images(self, page=0):
+        if not self.id_token or not self.access_token:
+            raise MissingAuthError
+
+        if page == 0:
+            endpoint = '/user/images'
+        else:
+            endpoint = '/user/images/{}'.format(page)
+
+        resp = requests.get(
+            '{}{}'.format(self.apibase, endpoint),
+            headers=self.get_auth_header()
+        )
+
+        if not resp.status_code == 200:
+            raise HttpError(resp['status'], resp.status_code)
+
+        return resp.json()['images']
+
+    def delete_image(self, id):
+        if not self.id_token or not self.access_token:
+            raise MissingAuthError
+
+        payload = {
+            'id': id
+        }
+
+        resp = request.get(
+            '{}/user/image/delete'.format(self.apibase),
+            json=payload,
+            headers=self.get_auth_header()
+        )
+
+        if not resp.status_code == 200:
+            raise HttpError(resp['status'], resp.status_code)
 
         return resp.json()
 
