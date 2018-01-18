@@ -23,7 +23,7 @@ class Api():
 
     def get_auth_header(self):
         return {
-            'Authorization': self.id_token,
+            'Authorization': "Bearer {}".format(self.id_token),
             'AccessToken': self.access_token
         }
 
