@@ -62,7 +62,7 @@ class Api():
 
     def domains(self):
         resp = requests.get('{}/domains'.format(self.apibase))
-
+        print(resp.status_code)
         if not resp.status_code == 200:
             raise HttpError(resp.json()['status'], resp.status_code)
 
