@@ -20,12 +20,12 @@ class Api():
             'AccessToken': self.access_token
         }
 
-    def auth(func):
-        def wrapper(self):
+    def auth(func, *args, **kwargs):
+        def wrapper(self, *args, **kwargs):
             if not self.id_token and not self.access_token:
                 raise MussingAuthError
             else:
-                return func(self)
+                return func(self, *args, **kwargs)
         return wrapper
 
     def upload(self, f):

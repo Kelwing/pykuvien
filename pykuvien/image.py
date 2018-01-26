@@ -24,12 +24,12 @@ class Image():
             'AccessToken': self.access_token
         }
 
-    def auth_decorator(func):
-        def wrapper(self):
+    def auth_decorator(func, *args, **kwargs):
+        def wrapper(self, *args, **kwargs):
             if not self.id_token or not self.access_token:
                 raise MissingAuthError
             else:
-                return func(self)
+                return func(self, *args, **kwargs)
         return wrapper
 
     @auth_decorator
