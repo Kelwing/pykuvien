@@ -2,16 +2,9 @@ import magic
 import requests
 import os
 
-
-class MissingAuthError(Exception):
-    pass
-
-
-class HttpError(Exception):
-    def __init__(self, message, status_code):
-        super(HttpError, self).__init__(message)
-
-        self.status_code = status_code
+from .image import Image
+from .domain import Domain
+from .error import MissingAuthError, HttpError
 
 
 class Api():
@@ -27,6 +20,14 @@ class Api():
             'AccessToken': self.access_token
         }
 
+    def auth(func, *args, **kwargs):
+        def wrapper(self, *args, **kwargs):
+            if not self.id_token and not self.access_token:
+                raise MussingAuthError
+            else:
+                return func(self, *args, **kwargs)
+        return wrapper
+
     def upload(self, f):
         if not self.key:
             raise MissingAuthError
@@ -37,8 +38,8 @@ class Api():
         else:
             is_fo = True
 
-        filename = os.path.basename(f.name) if is_fo else f
         fo = f if is_fo else open(f, 'rb')
+        filename = os.path.basename(f.name) if is_fo else f
         mimetype = mime.from_buffer(fo.read(1024))
 
         form_data = {
@@ -58,7 +59,9 @@ class Api():
         if not resp.status_code == 200:
             raise HttpError(resp.json()['status'], resp.status_code)
 
-        return resp.json()['file']['url']
+        re = resp.json()['file']
+        image = Image(re['url'], f.name, self.id_token, self.access_token)
+        return image
 
     def domains(self):
         resp = requests.get('{}/domains'.format(self.apibase))
@@ -68,9 +71,8 @@ class Api():
 
         return resp.json()['domains']
 
+    @auth
     def list_subdomains(self):
-        if not self.id_token or not self.access_token:
-            raise MissingAuthError
 
         resp = requests.get(
             '{}/user/domains'.format(self.apibase),
@@ -78,14 +80,23 @@ class Api():
         )
 
         if not resp.status_code == 200:
+            print(resp.status_code)
             raise HttpError(resp.json()['status'], resp.status_code)
 
-        return resp.json()['domains']
+        domains = resp.json()['domains']
+        ds = list()
+        for domain in domains:
+            d = Domain(
+                    domain['domain'],
+                    domain['subdomain'],
+                    domain['key'],
+                    self.id_token,
+                    self.access_token)
+            ds.append(d)
+        return ds
 
+    @auth
     def add_subdomain(self, subdomain, domain):
-        if not self.id_token or not self.access_token:
-            raise MissingAuthError
-
         payload = {
             'domain': domain,
             'subdomain': subdomain
@@ -100,50 +111,17 @@ class Api():
         if not resp.status_code == 200:
             raise HttpError(resp.json()['status'], resp.status_code)
 
-        return resp.json()
+        d = resp.json()
+        domain = Domain(
+                d['subdomain'],
+                d['domain'],
+                d['key'],
+                self.id_token,
+                self.access_token)
+        return domain
 
-    def remove_subdomain(self, domainkey):
-        if not self.id_token or not self.access_token:
-            raise MissingAuthError
-
-        payload = {
-            'key': domainkey
-        }
-
-        resp = requests.post(
-            '{}/user/domain/delete'.format(self.apibase),
-            json=payload,
-            headers=self.get_auth_header()
-        )
-
-        if not resp.status_code == 200:
-            raise HttpError(resp.json()['status'], resp.status_code)
-
-        return resp.json()
-
-    def regenerate_domainkey(self, domainkey):
-        if not self.id_token or not self.access_token:
-            raise MissingAuthError
-
-        payload = {
-            'key': domainkey
-        }
-
-        resp = requests.post(
-            '{}/user/domain/regenerate'.format(self.apibase),
-            json=payload,
-            headers=self.get_auth_header()
-        )
-
-        if not resp.status_code == 200:
-            raise HttpError(resp.json()['status'], resp.status_code)
-
-        return resp.json()
-
+    @auth
     def list_images(self, page=0):
-        if not self.id_token or not self.access_token:
-            raise MissingAuthError
-
         if page == 0:
             endpoint = '/user/images'
         else:
@@ -157,26 +135,31 @@ class Api():
         if not resp.status_code == 200:
             raise HttpError(resp.json()['status'], resp.status_code)
 
-        return resp.json()['images']
+        images = list()
+        for i in resp.json()['images']:
+            url = "https://" + i['subdomain'] + '.' + i['domain'] + "/" + i['_id']
+            u = Image(url, i['originalname'], self.id_token, self.access_token, i['mature'])
+            images.append(u)
 
-    def delete_image(self, id):
-        if not self.id_token or not self.access_token:
-            raise MissingAuthError
+        return images
 
-        payload = {
-            'id': id
-        }
-
+    @auth
+    def get(self, id):
         resp = request.get(
-            '{}/user/image/delete'.format(self.apibase),
-            json=payload,
-            headers=self.get_auth_header()
-        )
+                '{}/user/image/{}'.format(self.apibase, id),
+                headers=self.get_auth_header()
+                )
 
         if not resp.status_code == 200:
             raise HttpError(resp.json()['status'], resp.status_code)
 
-        return resp.json()
+        raw_img = resp.json()['image']
+        return Image(
+                "https://" + raw_img['subdomain'] + '.' + raw_img['domain'] + '/' + raw_img['_id'],
+                raw_img['originalname'],
+                self.id_token,
+                self.access_token,
+                raw_img['mature'])
 
 
 if __name__ == '__main__':
