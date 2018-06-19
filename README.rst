@@ -1,3 +1,5 @@
+**Kuvien is now a dead project. This API interface will no longer work for its intended use.**
+
 pykuvien
 ========
 
